@@ -28,6 +28,7 @@ sys.path.insert(0, ROOT)
 from input_sanitizer import sanitize_input          # noqa: E402
 from intelligence import IntelligenceLayer           # noqa: E402
 from app.policy_engine import load_policy            # noqa: E402
+from app.agent import run_agent                      # noqa: E402
 
 AUDIT_LOG  = os.path.join(ROOT, "audit_log.jsonl")
 SENTINEL_LOG = os.path.join(ROOT, "sentinel.log")
@@ -59,6 +60,10 @@ class IntentRequest(BaseModel):
     ticker: str = ""
     amount: float = 0.0
     scope:  str = "execute"  # "execute" | "research"
+
+class AgentRunRequest(BaseModel):
+    message: str                  # natural language command
+    dry_run: bool = True          # if False, hits live Alpaca API
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
@@ -152,3 +157,23 @@ def get_logs(limit: int = 50):
             parsed.append({"raw": line})
 
     return {"logs": list(reversed(parsed)), "total": len(lines)}
+
+
+@app.post("/agent/run", tags=["agent"])
+def agent_run(req: AgentRunRequest):
+    """
+    ⭐ FULL PIPELINE — Runs all 5 layers end-to-end in pure Python.
+    No OpenClaw install required for this endpoint.
+
+    Layers executed:
+      1. Input Sanitizer     — injection detection
+      2. Intent Parser       — natural language → structured intent
+      3. Intelligence Layer  — exposure + behavior checks
+      4. Policy Engine       — ArmorClaw policy mirror
+      5. Alpaca Execution    — (only if dry_run=False and all layers pass)
+
+    Example body:
+      {"message": "Buy $500 of AAPL", "dry_run": true}
+    """
+    result = run_agent(req.message, dry_run=req.dry_run)
+    return result

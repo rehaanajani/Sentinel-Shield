@@ -1,7 +1,8 @@
 {
   "date": "2026-04-02",
-  "daily_total": 1000.0,
+  "daily_total": 1500.0,
   "per_ticker": {
-    "AAPL": 1000.0
+    "AAPL": 1000.0,
+    "OF": 500.0
   }
 }
