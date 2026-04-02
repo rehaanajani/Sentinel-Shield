@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Environment
+.env
+.env.*
+*.env
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# State files (regenerated at runtime)
+state/behavior_log.json
+audit_log.jsonl
+sentinel.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
