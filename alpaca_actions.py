@@ -63,11 +63,11 @@ def get_positions():
     print(json.dumps(res.json(), indent=2))
 
 
-def trade(side: str, symbol: str, notional: float):
-    """Submit a market order by notional (USD amount) — after Intelligence check."""
-    if not _run_intelligence_gate(side, symbol, notional):
-        sys.exit(1)  # ArmorClaw sees non-zero exit and treats as blocked
-
+def submit_order(side: str, symbol: str, notional: float) -> dict:
+    """
+    Submit a market order by notional (USD amount) with no gate.
+    Only call this for a trade that has already passed the Intelligence Layer.
+    """
     data = {
         "symbol":       symbol.upper(),
         "notional":     float(notional),
@@ -75,8 +75,16 @@ def trade(side: str, symbol: str, notional: float):
         "type":         "market",
         "time_in_force": "day",
     }
-    res = requests.post(f"{BASE_URL}/orders", headers=HEADERS, json=data)
-    print(json.dumps(res.json(), indent=2))
+    res = requests.post(f"{BASE_URL}/orders", headers=HEADERS, json=data, timeout=15)
+    res.raise_for_status()
+    return res.json()
+
+
+def trade(side: str, symbol: str, notional: float):
+    """Submit a market order by notional (USD amount) — after Intelligence check."""
+    if not _run_intelligence_gate(side, symbol, notional):
+        sys.exit(1)  # ArmorClaw sees non-zero exit and treats as blocked
+    print(json.dumps(submit_order(side, symbol, notional), indent=2))
 
 
 # ── CLI entry point ────────────────────────────────────────────────────────────

@@ -165,15 +165,20 @@ def run_agent(message: str, dry_run: bool = True) -> dict:
         log["final"] = {"status": "approved",
                         "note": "All layers passed. Set dry_run=False to execute live paper trade."}
     else:
-        import subprocess
-        result = subprocess.run(
-            ["python", "alpaca_actions.py", intent["action"],
-             intent["ticker"], str(intent["amount"])],
-            capture_output=True, text=True, cwd=BASE_DIR
-        )
-        output = result.stdout or result.stderr
-        log["layers"]["5_alpaca"] = {"status": "executed" if result.returncode == 0 else "error",
-                                      "output": output.strip()}
-        log["final"] = {"status": "executed" if result.returncode == 0 else "error"}
+        # Call Alpaca in-process: the trade already passed Layer 3, and going
+        # through alpaca_actions.trade() would run (and commit) the gate twice.
+        from alpaca_actions import API_KEY, API_SECRET, submit_order
+        if not API_KEY or not API_SECRET:
+            log["layers"]["5_alpaca"] = {"status": "error",
+                                          "output": "Alpaca API keys not found in environment."}
+            log["final"] = {"status": "error"}
+            return log
+        try:
+            order = submit_order(intent["action"], intent["ticker"], intent["amount"])
+            log["layers"]["5_alpaca"] = {"status": "executed", "output": order}
+            log["final"] = {"status": "executed"}
+        except Exception as exc:
+            log["layers"]["5_alpaca"] = {"status": "error", "output": str(exc)}
+            log["final"] = {"status": "error"}
 
     return log
