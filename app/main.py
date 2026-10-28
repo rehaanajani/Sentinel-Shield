@@ -17,7 +17,7 @@ import json
 import os
 import sys
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -117,7 +117,7 @@ def intelligence_status():
 
 
 @app.get("/audit/log", tags=["audit"])
-def audit_log(limit: int = 20):
+def audit_log(limit: int = Query(20, ge=1, le=500)):
     """
     Returns the last `limit` Decision Records from audit_log.jsonl.
     Each record shows: layer, decision_id, status, intent, reasons, timestamp.
@@ -139,7 +139,7 @@ def audit_log(limit: int = 20):
 
 
 @app.get("/logs", tags=["audit"])
-def get_logs(limit: int = 50):
+def get_logs(limit: int = Query(50, ge=1, le=500)):
     """
     Returns the last `limit` lines from sentinel.log as structured JSON.
     """
