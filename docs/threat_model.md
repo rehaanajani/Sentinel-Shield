@@ -53,7 +53,7 @@ This document describes the 8 threat scenarios SentinelShield is designed to det
 
 **Threat**: Agent executes trades during earnings blackout periods or after market close, when pricing is unreliable.
 
-**How we solve it**: `BehaviorDetector` checks the current UTC hour. Any `BUY`/`SELL` outside `14:00–21:00 UTC` (approximate NYSE hours) is blocked before reaching Alpaca.
+**How we solve it**: `BehaviorDetector` converts the current time to `America/New_York`. Any `BUY`/`SELL` outside the regular NYSE session (Mon–Fri 09:30–16:00 ET) is blocked before reaching Alpaca.
 
 ---
 

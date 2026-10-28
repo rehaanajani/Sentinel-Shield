@@ -88,7 +88,7 @@ openclaw agent --message "Buy $1000 more of AAPL"
 | Daily total exposure cap | $10,000 |
 | Identical commands (bot detection) | 3 per 60s |
 | Trade spike threshold | 3× recent average |
-| Market hours | 14:00–21:00 UTC |
+| Market hours | Mon–Fri 09:30–16:00 ET (DST-aware) |
 
 ---
 
@@ -112,3 +112,14 @@ openclaw agent --message "Buy $1000 more of AAPL"
 - `docs/threat_model.md` — All 8 threat scenarios
 - `docs/intent_policy_model.md` — Intent and policy model
 - `docs/demo_script.md` — 3-minute video script
+
+---
+
+## Running Tests
+
+```bash
+pip install -r requirements.txt pytest httpx
+python -m pytest -q
+```
+
+Tests run against a temporary state directory, so they never touch `state/` or the audit log.
