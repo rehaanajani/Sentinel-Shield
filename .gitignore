@@ -19,7 +19,7 @@ venv/
 env/
 
 # State files (regenerated at runtime)
-state/behavior_log.json
+state/*.json
 audit_log.jsonl
 sentinel.log
 
