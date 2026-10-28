@@ -34,7 +34,7 @@ INJECTION_PATTERNS = [
     r"\bact\s+as\s+if\b",
     r"\bpretend\b",
     r"\bsupersede\b",
-    r"DAN\b",                     # "Do Anything Now" jailbreak
+    r"\bdan\b",                   # "Do Anything Now" jailbreak (input is lowercased)
     r"\bsystem\s+prompt\b",
     r"\byou\s+are\s+now\b",
 ]
