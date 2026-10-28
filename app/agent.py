@@ -59,7 +59,7 @@ def _find_ticker(tail: str) -> str:
 
 
 _ACCOUNT_RE  = re.compile(r"\b(account|balance|equity|portfolio)\b", re.IGNORECASE)
-_POSITION_RE = re.compile(r"\b(position|holding|stock|portfolio)\b", re.IGNORECASE)
+_POSITION_RE = re.compile(r"\b(positions?|holdings?|stocks?|portfolio)\b", re.IGNORECASE)
 _RESEARCH_RE = re.compile(r"\b(research|analyze|look up|check|what is)\b", re.IGNORECASE)
 
 
