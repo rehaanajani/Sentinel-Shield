@@ -18,8 +18,8 @@ import json
 import os
 import time
 import hashlib
-from datetime import datetime, timezone, timedelta
-from collections import defaultdict
+from datetime import datetime, time as dtime, timezone
+from zoneinfo import ZoneInfo
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
@@ -38,9 +38,16 @@ RATE_LIMIT_MAX      = 3       # max identical commands in that window
 SPIKE_MULTIPLIER    = 3.0     # flag if trade > 3x recent average
 SPIKE_LOOKBACK      = 5       # how many past trades to avg for spike check
 
-# ── Market hours (ET in UTC offset, approximation — not DST-aware) ─────────
-MARKET_OPEN_HOUR_UTC  = 14   # 9:30 AM ET ≈ 14:30 UTC
-MARKET_CLOSE_HOUR_UTC = 21   # 4:00 PM ET ≈ 21:00 UTC
+# ── Market hours (NYSE regular session, US/Eastern, DST-aware) ─────────────
+MARKET_TZ    = ZoneInfo("America/New_York")
+MARKET_OPEN  = dtime(9, 30)
+MARKET_CLOSE = dtime(16, 0)
+
+
+def market_is_open(now: datetime | None = None) -> bool:
+    """True during the regular Mon–Fri 9:30–16:00 ET session (holidays not handled)."""
+    et = (now or datetime.now(timezone.utc)).astimezone(MARKET_TZ)
+    return et.weekday() < 5 and MARKET_OPEN <= et.time() < MARKET_CLOSE
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,14 +186,13 @@ class BehaviorDetector:
             )
 
         # ── Market hours check (P6) ───────────────────────────────────────────
-        utc_hour = datetime.now(timezone.utc).hour
-        if action in ("BUY", "SELL"):
-            if not (MARKET_OPEN_HOUR_UTC <= utc_hour < MARKET_CLOSE_HOUR_UTC):
-                reasons.append(
-                    f"Market hours violation: trades only allowed "
-                    f"{MARKET_OPEN_HOUR_UTC}:00–{MARKET_CLOSE_HOUR_UTC}:00 UTC "
-                    f"(current hour: {utc_hour:02d}:xx UTC)"
-                )
+        if action in ("BUY", "SELL") and not market_is_open():
+            now_et = datetime.now(MARKET_TZ)
+            reasons.append(
+                "Market hours violation: trades only allowed Mon–Fri "
+                "09:30–16:00 ET "
+                f"(now {now_et:%a %H:%M} ET)"
+            )
 
         # ── Rate limiting / bot detection (P5) ─────────────────────────────
         if action in ("BUY", "SELL"):
