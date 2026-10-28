@@ -249,7 +249,12 @@ class IntelligenceLayer:
         self.risk      = RiskEngine()
         self.behavior  = BehaviorDetector()
 
-    def check(self, intent: dict) -> dict:
+    def check(self, intent: dict, commit: bool = True) -> dict:
+        """
+        Run every engine on the intent and write a Decision Record.
+        Pass commit=False when later layers still have to approve the trade,
+        then call commit(intent) once they do.
+        """
         all_reasons = []
 
         # Run both engines
@@ -278,18 +283,22 @@ class IntelligenceLayer:
         _append_audit(record)
 
         # Commit exposure only when fully approved
-        if status == "approved":
-            self.risk.commit(
-                intent.get("action", ""),
-                intent.get("ticker", ""),
-                float(intent.get("amount", 0)),
-            )
+        if status == "approved" and commit:
+            self.commit(intent)
 
         return {
             "status":      status,
             "reasons":     all_reasons,
             "decision_id": decision_id,
         }
+
+    def commit(self, intent: dict):
+        """Record the trade's exposure. Call only after every layer approved it."""
+        self.risk.commit(
+            intent.get("action", ""),
+            intent.get("ticker", ""),
+            float(intent.get("amount", 0)),
+        )
 
     def state(self) -> dict:
         return self.risk.state_snapshot()

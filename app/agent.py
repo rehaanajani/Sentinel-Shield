@@ -131,7 +131,8 @@ def run_agent(message: str, dry_run: bool = True) -> dict:
         return log
 
     # ── Layer 3: Intelligence Layer ────────────────────────────────────────
-    intelligence_result = IntelligenceLayer().check(intent)
+    intelligence = IntelligenceLayer()
+    intelligence_result = intelligence.check(intent, commit=False)
     log["layers"]["3_intelligence"] = intelligence_result
     info("agent", "layer3_complete", status=intelligence_result["status"])
 
@@ -154,6 +155,9 @@ def run_agent(message: str, dry_run: bool = True) -> dict:
         log["final"] = {"status": "blocked", "blocked_by": "armorclaw_policy",
                         "reasons": policy_violations}
         return log
+
+    # Every gate passed — only now does the trade count toward exposure
+    intelligence.commit(intent)
 
     # ── Layer 5: Alpaca Execution ──────────────────────────────────────────
     if dry_run:
