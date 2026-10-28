@@ -35,13 +35,29 @@ from app.logger import info, warn
 
 # ── Simple intent parser (no LLM - deterministic for demo) ───────────────────
 _BUY_RE  = re.compile(
-    r"\b(buy|purchase|get)\b.{0,40}?\$?([\d,]+(?:\.\d+)?).{0,30}?\b([A-Z]{2,5})\b",
+    r"\b(buy|purchase|get)\b.{0,40}?\$?([\d,]+(?:\.\d+)?)(.{0,40})",
     re.IGNORECASE
 )
 _SELL_RE = re.compile(
-    r"\b(sell|liquidate|dump)\b.{0,40}?\$?([\d,]+(?:\.\d+)?).{0,30}?\b([A-Z]{2,5})\b",
+    r"\b(sell|liquidate|dump)\b.{0,40}?\$?([\d,]+(?:\.\d+)?)(.{0,40})",
     re.IGNORECASE
 )
+_WORD_RE = re.compile(r"\b[A-Za-z]{1,5}\b")
+# Filler words that can sit between the amount and the ticker
+_NOT_TICKERS = {
+    "of", "in", "on", "the", "a", "an", "worth", "usd", "more", "some",
+    "share", "shares", "stock", "buck", "bucks", "for", "into", "at", "k",
+}
+
+
+def _find_ticker(tail: str) -> str:
+    """Return the first word after the amount that isn't filler ('' if none)."""
+    for word in _WORD_RE.findall(tail):
+        if word.lower() not in _NOT_TICKERS:
+            return word.upper()
+    return ""
+
+
 _ACCOUNT_RE  = re.compile(r"\b(account|balance|equity|portfolio)\b", re.IGNORECASE)
 _POSITION_RE = re.compile(r"\b(position|holding|stock|portfolio)\b", re.IGNORECASE)
 _RESEARCH_RE = re.compile(r"\b(research|analyze|look up|check|what is)\b", re.IGNORECASE)
@@ -55,15 +71,13 @@ def parse_intent(message: str) -> dict:
     # Check if research-only scope
     scope = "research" if _RESEARCH_RE.search(message) and not _BUY_RE.search(message) else "execute"
 
-    m = _BUY_RE.search(message)
-    if m:
-        amount = float(m.group(2).replace(",", ""))
-        return {"action": "BUY", "ticker": m.group(3).upper(), "amount": amount, "scope": scope}
-
-    m = _SELL_RE.search(message)
-    if m:
-        amount = float(m.group(2).replace(",", ""))
-        return {"action": "SELL", "ticker": m.group(3).upper(), "amount": amount, "scope": scope}
+    for action, pattern in (("BUY", _BUY_RE), ("SELL", _SELL_RE)):
+        m = pattern.search(message)
+        if m:
+            ticker = _find_ticker(m.group(3))
+            if ticker:
+                amount = float(m.group(2).replace(",", ""))
+                return {"action": action, "ticker": ticker, "amount": amount, "scope": scope}
 
     if _ACCOUNT_RE.search(message):
         return {"action": "ACCOUNT", "ticker": "", "amount": 0, "scope": scope}
