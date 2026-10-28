@@ -88,22 +88,35 @@ def sanitize_input(user_input: str) -> dict:
     return {"status": "ok"}
 
 
-def sanitize_tool_output(tool_result: dict) -> dict:
+def _redact(value, found: set):
+    """Recursively replace sensitive keys in dicts (and dicts inside lists)."""
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            if k in SENSITIVE_FIELDS:
+                out[k] = "[REDACTED]"
+                found.add(k)
+            else:
+                out[k] = _redact(v, found)
+        return out
+    if isinstance(value, list):
+        return [_redact(v, found) for v in value]
+    return value
+
+
+def sanitize_tool_output(tool_result):
     """
     Redact sensitive financial fields from tool responses before they
     re-enter the agent's reasoning context.  (Threat P8)
+    Handles nested objects and lists, e.g. a list of positions.
     """
-    redacted = {}
-    for k, v in tool_result.items():
-        if k in SENSITIVE_FIELDS:
-            redacted[k] = "[REDACTED]"
-        else:
-            redacted[k] = v
-    if redacted != tool_result:
+    found: set = set()
+    redacted = _redact(tool_result, found)
+    if found:
         _write_audit({
             "layer": "input_sanitizer",
             "event": "output_redacted",
-            "fields_redacted": [k for k in tool_result if k in SENSITIVE_FIELDS],
+            "fields_redacted": sorted(found),
         })
     return redacted
 
