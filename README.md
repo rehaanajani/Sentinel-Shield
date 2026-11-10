@@ -123,3 +123,7 @@ python -m pytest -q
 ```
 
 Tests run against a temporary state directory, so they never touch `state/` or the audit log.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
